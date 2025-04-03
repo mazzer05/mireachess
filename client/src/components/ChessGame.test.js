@@ -27,3 +27,28 @@ describe('confirmResign', () => {
     expect(isResignModalVisible.value).toBe(false);
   });
 });
+
+describe('handleCheckmate', () => {
+  let winner;
+  let isModalVisible;
+
+  beforeEach(() => {
+    // Инициализация реактивных переменных
+    winner = ref(null);
+    isModalVisible = ref(false);
+  });
+
+  it('should set winner to "Чёрные" and show modal when isMated is "w"', () => {
+    handleCheckmate('b');
+
+    expect(winner.value).toBe('Черные');
+    expect(isModalVisible.value).toBe(true);
+  });
+
+  it('should set winner to "Белые" and show modal when isMated is not "w"', () => {
+    handleCheckmate('w');
+
+    expect(winner.value).toBe('Белые');
+    expect(isModalVisible.value).toBe(true);
+  });
+});

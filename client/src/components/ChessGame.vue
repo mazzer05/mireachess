@@ -157,7 +157,7 @@ async function showBestMove() {
         @board-created="(api) => (boardAPI = api)"
         @checkmate="handleCheckmate"
         @draw="handleDraw"
-
+        
       />
       <!-- Слушаем событие хода -->
     </div>
