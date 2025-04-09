@@ -1,12 +1,11 @@
-<script setup>
-import MireaChess from './components/ChessGame.vue'
-</script>
-
 <template>
-
-  <MireaChess msg="MireaChess" />
+  <router-view />
 </template>
 
-<style scoped>
-
+<style>
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
 </style>

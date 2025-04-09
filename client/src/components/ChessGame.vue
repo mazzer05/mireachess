@@ -1,13 +1,16 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onBeforeMount } from "vue";
 import { TheChessboard } from "vue3-chessboard";
 import "vue3-chessboard/style.css";
 import axios from "axios";
 import "./styles.css";
+import { useRoute, useRouter } from 'vue-router';
 
-const isGameStarted = ref(false); // Переменная для отслеживания состояния игры
-const selectedDifficulty = ref("1"); // Переменная для хранения выбранного уровня сложности
-const selectedColor = ref("w");
+const route = useRoute();
+const router = useRouter();
+const isGameStarted = ref(true); // Changed to true since we're now in the game route
+const selectedDifficulty = ref(route.query.difficulty || "1");
+const selectedColor = ref(route.query.color || "w");
 const moveHistory = ref([]);
 let boardAPI;
 const isModalVisible = ref(false);
@@ -21,9 +24,8 @@ const boardConfigForWhite = {
 
 //Сдаться
 function confirmResign() {
-  isResignModalVisible.value = true; // Показываем модальное окно подтверждения
-  handleCheckmate(winner.value); // Передаем значение winner
-  isResignModalVisible.value = false; // Скрываем модальное окно подтверждения
+  handleCheckmate(selectedColor.value === 'w' ? 'b' : 'w'); // Pass the opposite color as winner
+  isResignModalVisible.value = false;
 }
 
 //Мат
@@ -31,12 +33,28 @@ function handleCheckmate(isMated) {
   const winnerColor = isMated === 'w' ? 'Чёрные' : 'Белые';
   winner.value = winnerColor;
   isModalVisible.value = true;
+  setTimeout(() => {
+    router.push('/');
+  }, 2000);
 }
 
 //Ничья
 function handleDraw() {
-  isDrawModalVisible.value = true; // Показываем модальное окно ничьей
+  isDrawModalVisible.value = true;
+  setTimeout(() => {
+    router.push('/');
+  }, 2000);
 }
+
+onMounted(() => {
+  const script = document.createElement("script");
+  script.src = "https://telegram.org/js/telegram-web-app.js";
+  script.async = true;
+  document.body.appendChild(script);
+  
+  // Initialize the game with the selected color and difficulty
+  startGame();
+});
 
 async function startGame() {
   let diff = 1;
@@ -54,10 +72,11 @@ async function startGame() {
   } catch (error) {
     console.error("Ошибка при отправке запроса: ", error);
   }
-  isGameStarted.value = true;
 
+  // Set board orientation based on selected color
   if (selectedColor.value === "b") {
     boardAPI?.toggleOrientation();
+    // Send initial move for black pieces
     sendMove(boardAPI?.getFen());
   }
 }
@@ -76,15 +95,28 @@ function resetGame() {
   moveHistory.value = [];
   isModalVisible.value = false; // Скрываем модальное окно при сбросе игры
   isDrawModalVisible.value = false; // Скрываем модальное окно ничьей
-
+  
+  // Reset board orientation based on selected color
+  if (selectedColor.value === "b") {
+    boardAPI?.toggleOrientation();
+    // Send initial move for black pieces
+    sendMove(boardAPI?.getFen());
+  }
 }
 
-onMounted(() => {
-  const script = document.createElement("script");
-  script.src = "https://telegram.org/js/telegram-web-app.js";
-  script.async = true;
-  document.body.appendChild(script);
-});
+function undoLastMove() {
+  if (moveHistory.value.length > 0) {
+    // Undo bot's move
+    boardAPI?.undoLastMove();
+    moveHistory.value.pop();
+    
+    // If there are more moves, undo player's move too
+    if (moveHistory.value.length > 0) {
+      boardAPI?.undoLastMove();
+      moveHistory.value.pop();
+    }
+  }
+}
 
 async function sendMove(fen) {
   console.log(boardAPI?.getLastMove());
@@ -137,8 +169,8 @@ async function showBestMove() {
   // },
    -->
 
-<template title>
-  <div id="main" v-show="isGameStarted">
+<template>
+  <div id="main" class="game-container">
     <h1>MireaChess</h1>
     <div id="move-history">
       <div id="selectedOptions">
@@ -157,9 +189,7 @@ async function showBestMove() {
         @board-created="(api) => (boardAPI = api)"
         @checkmate="handleCheckmate"
         @draw="handleDraw"
-        
       />
-      <!-- Слушаем событие хода -->
     </div>
     <div id="status">
       <div v-if="moveHistory.length === 0">Ходят белые</div>
@@ -168,24 +198,23 @@ async function showBestMove() {
     <div className="menu">
       <button @click="boardAPI?.toggleOrientation()">Повернуть доску</button>
       <button @click="resetGame()">Начать сначала</button>
-      <button @click="boardAPI?.undoLastMove()">Ход назад</button>
+      <button @click="undoLastMove">Ход назад</button>
       <button @click="showBestMove">Помочь с ходом</button>  
       <button @click="isResignModalVisible = true">Сдаться</button> 
-
     </div>
 
-        <!-- Модальное окно для конца игры -->
+    <!-- Модальное окно для конца игры -->
     <div v-if="isModalVisible" class="modal-overlay">
       <div class="modal">
         <h2>{{ winner }} проиграли</h2>
-        <button class="btn-new" @click="resetGame">Начать новую игру</button>
+        <p>Возвращаемся на главную страницу...</p>
       </div>
     </div>
-        <!-- Модальное окно для ничьей -->
+    <!-- Модальное окно для ничьей -->
     <div v-if="isDrawModalVisible" class="modal-overlay">
       <div class="modal">
         <h2>Ничья!</h2>
-        <button class="btn-new" @click="resetGame">Начать новую игру</button>
+        <p>Возвращаемся на главную страницу...</p>
       </div>
     </div>
     <!-- Модальное окно для подтверждения сдачи -->
@@ -197,28 +226,5 @@ async function showBestMove() {
       </div>
     </div>
   </div>
-  
-  <!-- ТУТ БУДЕТ МЕНЮ ВЫБОРА СЛОЖНОСТИ БОТА И ВСЯКИЕ НАСТРОЙКИ -->
-  <div id="start" v-show="!isGameStarted">
-    <h2>Добро пожаловать!</h2>
-    <h4>
-      За кого играете:
-      <select v-model="selectedColor">
-        <option value="w">белые</option>
-        <option value="b">чёрные</option>
-      </select>
-    </h4>
-    <h4>
-      Сложность бота:
-      <select v-model="selectedDifficulty">
-        <option value="1">Слабый</option>
-        <option value="2">Средний</option>
-        <option value="3">Сильный</option>
-      </select>
-    </h4>
-
-    <button @click="startGame" id="game">Играть</button>
-  </div>
-  
 </template>
 
