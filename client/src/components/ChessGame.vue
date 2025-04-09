@@ -8,7 +8,7 @@ import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
 const router = useRouter();
-const isGameStarted = ref(true); // Changed to true since we're now in the game route
+const isGameStarted = ref(true); 
 const selectedDifficulty = ref(route.query.difficulty || "1");
 const selectedColor = ref(route.query.color || "w");
 const moveHistory = ref([]);
@@ -24,7 +24,7 @@ const boardConfigForWhite = {
 
 //Сдаться
 function confirmResign() {
-  handleCheckmate(selectedColor.value === 'w' ? 'b' : 'w'); // Pass the opposite color as winner
+  handleCheckmate(selectedColor.value === 'w' ? 'b' : 'w');
   isResignModalVisible.value = false;
 }
 
@@ -51,8 +51,6 @@ onMounted(() => {
   script.src = "https://telegram.org/js/telegram-web-app.js";
   script.async = true;
   document.body.appendChild(script);
-  
-  // Initialize the game with the selected color and difficulty
   startGame();
 });
 
@@ -73,10 +71,8 @@ async function startGame() {
     console.error("Ошибка при отправке запроса: ", error);
   }
 
-  // Set board orientation based on selected color
   if (selectedColor.value === "b") {
     boardAPI?.toggleOrientation();
-    // Send initial move for black pieces
     sendMove(boardAPI?.getFen());
   }
 }
@@ -93,24 +89,20 @@ function recordMove() {
 function resetGame() {
   boardAPI?.resetBoard();
   moveHistory.value = [];
-  isModalVisible.value = false; // Скрываем модальное окно при сбросе игры
-  isDrawModalVisible.value = false; // Скрываем модальное окно ничьей
+  isModalVisible.value = false; 
+  isDrawModalVisible.value = false;
   
-  // Reset board orientation based on selected color
   if (selectedColor.value === "b") {
     boardAPI?.toggleOrientation();
-    // Send initial move for black pieces
     sendMove(boardAPI?.getFen());
   }
 }
 
 function undoLastMove() {
   if (moveHistory.value.length > 0) {
-    // Undo bot's move
     boardAPI?.undoLastMove();
     moveHistory.value.pop();
     
-    // If there are more moves, undo player's move too
     if (moveHistory.value.length > 0) {
       boardAPI?.undoLastMove();
       moveHistory.value.pop();
@@ -131,14 +123,11 @@ async function sendMove(fen) {
   }
 }
 async function showBestMove() {
-  // Скрываем предыдущие стрелки перед показом новой
   boardAPI?.hideMoves(); 
 
-  // Получаем текущее состояние доски в формате FEN
   const fen = boardAPI?.getFen(); 
 
   try {
-    // Отправляем запрос на сервер для получения лучшего хода
     const response = await axios.post("http://localhost:8000/api/move", { fen: fen });
     const bestMove = response.data.best_move;
 
@@ -151,24 +140,7 @@ async function showBestMove() {
     console.error("Ошибка при получении лучшего хода:", error);
   }
 }
-
-// let tg = window.Telegram.WebApp;
-// let game = document.getElementById("game");
-
-// game.addEventListener("click", () => {
-//   document.getElementById("main").style.display == "none";
-//   document.getElementById("menu").style.display == "block";
-// });
 </script>
-<!-- // name: 'MyComponent',
-  // mounted() {
-  //   const script = document.createElement('script');
-  //   script.src = "https://telegram.org/js/telegram-web-app.js";
-  //   script.async = true;
-  //   document.body.appendChild(script);
-  // },
-   -->
-
 <template>
   <div id="main" class="game-container">
     <h1>MireaChess</h1>

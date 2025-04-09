@@ -1,6 +1,5 @@
-// confirmResign.test.js
 import { ref } from 'vue';
-import { confirmResign } from './ChessGame.vue'; // Используйте относительный путь
+import { confirmResign } from './ChessGame.vue';
 
 jest.mock('./ChessGame.vue', () => ({
     handleCheckmate: jest.fn(), // Мокаем handleCheckmate
@@ -23,7 +22,7 @@ describe('confirmResign', () => {
     // Проверяем, что модальное окно показано
     expect(isResignModalVisible.value).toBe(false);
 
-    // Проверяем, что модальное окно скрыто после вызова handleCheckmate
+    // Проверяем, что модальное окно скрыто
     expect(isResignModalVisible.value).toBe(false);
   });
 });
